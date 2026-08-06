@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Bac à sable — Logique Métier Boutique</title>
+<style>
+  /* ===== CSS MINIMALISTE (ne touche à rien ici, focus JS) ===== */
+  body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; background: #f5f5f5; }
+  .produit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .produit-item h3 { margin: 0; font-size: 16px; font-weight: 600; }
+  .produit-item p { margin: 0; font-size: 14px; color: #666; }
+  .header { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; margin-bottom: 16px; }
+  .header h1 { margin: 0; font-size: 18px; }
+  .header .big { font-size: 32px; font-weight: 700; margin-top: 8px; }
+  .actions { display: flex; gap: 8px; margin-bottom: 16px; }
+  .actions input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+  .actions button { padding: 10px 16px; background: #2c3e50; color: white; border: none; border-radius: 6px; cursor: pointer; }
+  .empty { text-align: center; padding: 40px; color: #888; }
+  .form-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .form-modal.open { display: flex; }
+  .form-box {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transform: scale(0.95); /* Légère animation à l'ouverture */
+    transition: transform 0.2s ease-out;
+  }
+  .form-modal.open .form-box {
+    transform: scale(1);
+  }
+  .form-box input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+  .form-box button { padding: 10px 16px; margin-right: 8px; cursor: pointer; }
+  .badge { font-size: 12px; background: #e74c3c; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+  .btn-supprimer {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER : CAGNOTTE ===== -->
+<div class="header">
+  <h1>Valeur du stock</h1>
+  <div class="big" id="valeur-cagnotte">0 FCFA</div>
+  <div style="margin-top:8px; font-size:14px; opacity:0.8;">
+    Ventes aujourd'hui : <strong id="total-ventes">0 FCFA</strong>
+  </div>
+</div>
+
+<!-- ===== BARRE D'ACTION ===== -->
+<div class="actions">
+  <input type="text" id="recherche" placeholder="Rechercher un produit...">
+  <button id="btn-ouvrir">+ Ajouter</button>
+</div>
+
+<!-- ===== LISTE ===== -->
+<div id="liste"></div>
+<div class="empty" id="etat-vide">Aucun produit. Clique sur + pour commencer.</div>
+
+<!-- ===== MODALE AJOUT ===== -->
+<div class="form-modal" id="modale">
+  <form id="form-produit" class="form-box">
+    <h3>Nouveau produit</h3>
+    <input type="text" id="in-nom" placeholder="Nom du produit" required>
+    <input type="number" id="in-prix" placeholder="Prix unitaire (FCFA)" required>
+    <input type="number" id="in-qte" placeholder="Quantité en stock" required>
+    <div>
+      <button type="button" id="btn-annuler">Annuler</button>
+      <button type="submit" id="btn-valider">Ajouter</button>
+    </div>
+  </form>
+</div>
+
+<script> 
+  let produits = JSON.parse(localStorage.getItem("produitKey")) || [];
+  mettreAJourValeurStock()
+  function afficherProduits(listeProduits){
+    const liste = document.getElementById("liste");
+    const etatVide = document.getElementById("etat-vide");
+
+    liste.innerHTML = "";
+    if (listeProduits.length === 0) {
+        etatVide.style.display = "block";
+    } else {
+        etatVide.style.display = "none";
+    }
+    for(let i = 0; i < listeProduits.length; i++){
+            liste.innerHTML += ` 
+                <div class = "produit-item">
+                   <h3>${listeProduits[i].nom}</h3>
+                   <p>${listeProduits[i].prix} FCFA</p>
+                   <p>Stock : ${listeProduits[i].quantite}</p>
+                   <button class="btn-supprimer" data-id="${listeProduits[i].id}">🗑️</button>
+                </div>
+            `; 
+        
+    }
+    // Suppression d'éléments 
+    const btnSupprimer = document.querySelectorAll(".btn-supprimer")
+    for(let i = 0; i < btnSupprimer.length; i++){
+        btnSupprimer[i].addEventListener("click" , function(){
+          let id = btnSupprimer[i].getAttribute("data-id")
+          
+          supprimerProduits(id)
+        })
+    }
+
+  }
+  
+  
+  afficherProduits(produits)
+  const btnValider = document.getElementById("btn-valider")
+  const btnOuvrir = document.getElementById("btn-ouvrir")
+  const btnAnnuler = document.getElementById("btn-annuler")
+  const modal = document.getElementById("modale")
+  btnOuvrir.addEventListener("click" , function(){
+    modal.classList.add("open")
+  })
+  btnAnnuler.addEventListener("click" , function(){
+    modal.classList.remove("open")
+  })
+  
+  //fonctions
+  function ajouterProduit(){
+    let inputNom = document.getElementById("in-nom").value
+    let inputPrix = Number(document.getElementById("in-prix").value)
+    let inputQte = Number(document.getElementById("in-qte").value)
+    if(inputNom.trim().length === 0 || inputPrix <= 0 || inputQte <= 0){
+      return
+    }
+    let produitAjouter = {
+                                id: Date.now(),
+                                nom: inputNom,
+                                prix: inputPrix,
+                                quantite: inputQte
+                          }
+    produits.push(produitAjouter)
+    localStorage.setItem("produitKey" , JSON.stringify(produits))
+    afficherProduits(produits)
+    
+  }
+  function calculerValeurStock(){
+    let total = 0
+    for(let i = 0; i < produits.length; i++){
+      total += produits[i].prix * produits[i].quantite  
+    }
+    return total
+  }
+  function mettreAJourValeurStock(){
+    const valeurCagnotte = document.getElementById("valeur-cagnotte")
+    valeurCagnotte.textContent = calculerValeurStock() + " FCFA"
+  }
+  const formProduit = document.getElementById("form-produit")
+  formProduit.addEventListener("submit" , function(event){
+    event.preventDefault()
+    ajouterProduit()
+    formProduit.reset()
+    modal.classList.remove("open") // Ferme la modale après ajout
+    mettreAJourValeurStock()
+  
+  })
+  // Trier des données
+  const recherche = document.getElementById("recherche")
+  recherche.addEventListener("input" , function(){
+    let texte = recherche.value
+    let resultatRecherche = []
+    for(let i = 0; i < produits.length; i++){
+      if(produits[i].nom.toLowerCase().includes(texte.toLowerCase())){
+        resultatRecherche.push(produits[i])
+      }
+    }
+    afficherProduits(resultatRecherche)
+  })
+  function supprimerProduits(id){
+    for(let i = 0; i < produits.length; i++){
+      if(produits[i].id === Number(id)){
+        produits.splice(i,1)
+        break
+      }
+    }
+    localStorage.setItem("produitKey" , JSON.stringify(produits))
+    afficherProduits(produits)
+    mettreAJourValeurStock()
+  }
+  
+</script>
+ 
+</body>
+</html>
