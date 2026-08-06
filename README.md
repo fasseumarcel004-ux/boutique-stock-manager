@@ -41,8 +41,21 @@ boutique-crud-js/
 3. Aucun serveur ou framework n'est nécessaire.
 
 ## Captures d'écran
+### Accueil
 
-Des captures d'écran seront ajoutées dans les prochaines versions du projet.
+![Accueil](screenshots/accueil.png)
+
+### Ajout d'un produit
+
+![Ajout](screenshots/ajout-produit.png)
+
+### Recherche
+
+![Recherche](screenshots/recherche.png)
+
+### Suppression
+
+![Suppression](screenshots/suppression.png)
 
 ## Ce que j'ai appris
 
@@ -72,7 +85,7 @@ Les prochaines versions du projet incluront :
 
 ## Auteur
 
-Développé par **FASSEU DEKEN**, étudiant en première année du cycle ingénieur à l'École Polytechnique de Douala.
+Développé par **FASSEU DEKEN PRINCE MARCEL**, étudiant en première année du cycle ingénieur à l'École Polytechnique de Douala.
 
 Je publie ce projet afin de suivre ma progression en développement web et de construire un portfolio composé de projets concrets et évolutifs.
 
